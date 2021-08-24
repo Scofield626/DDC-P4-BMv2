@@ -72,6 +72,16 @@ git pull
    mininte> pingall
    ```
 
+4. Failing links in the controller:
+   
+   ```bash
+   fail s1 s2
+   ```
+   
+   ```bash
+   reset
+   ```
+   
 ### Evalution
 #### 1. Path Stretch
 Path stretch is defined as the ratio between the length of the path a packet takes throughthe network, and the shortest path between the packet’s source and destination in thecurrent network state.

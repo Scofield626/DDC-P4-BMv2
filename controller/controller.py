@@ -158,110 +158,90 @@ class DDC_Controller(object):
 	    		    
 
 	# Ensure init a valid DAG, two nodes on each link have agreed with each other
-	def init_link_direction(self):
+	def init_link_direction(self):       
 
-#            dest_num = len(self.topo.get_hosts())
-#            for i in range(dest_num):
-#                for switch, control in self.controllers.items():
-#                    print(switch)
-#		    linkNum = control.register_read('linkNum',index = 0)
-#			# Principle: if counterpart node's view on this link was OUT, then read this node's direction on this link with IN
-#		    for connected_switch in self.topo.get_switches_connected_to(switch):
-#		        pre_direction = control.register_read('link_directions',index=i)
-#		    	counterpart_node_link_direction = self.controllers[connected_switch].register_read('link_directions',i)
-#				# print("the link direction of %s is %d"%(connected_switch,counterpart_node_link_direction))
-#			counter_connected_port = self.topo.node_to_node_port_num(connected_switch, switch)
-#    			connected_link_direction = counterpart_node_link_direction >> (counter_connected_port-1) 
-#                        if((connected_link_direction & 1) == 0): # judge the #port bit which represents link_Dir is 1 or 0
-#			    connected_port = self.topo.node_to_node_port_num(switch, connected_switch)
-#                            control.register_write('link_directions', i, pre_direction + pow(2,connected_port-1))
-#
-#		init_link_direction = control.register_read('link_directions', index = i)
-#		print("wrote the %d link_direction of %s -- %d "%(i,switch,init_link_direction))
-#       
+		graph = self.topo.network_graph
+		dijkstra = dict(all_pairs_dijkstra(graph, weight = 'weight'))
+		distances = {node: data[0] for node, data in dijkstra.items()}
+		paths = {node: data[1] for node, data in dijkstra.items()}
 
-            graph = self.topo.network_graph
-            dijkstra = dict(all_pairs_dijkstra(graph, weight = 'weight'))
-            distances = {node: data[0] for node, data in dijkstra.items()}
-            paths = {node: data[1] for node, data in dijkstra.items()}
+		switch_dict = {}
+		switch_dist_list = []
+		for key in distances.keys():
+			if key[0]=="h":
+				in_dict = {}
+				for in_key in distances[key].keys():
+					if in_key[0]=="s":
+						in_dict[int(in_key[1:])]=distances[key][in_key]
+				switch_dict[int(key[1:])]=in_dict
 
-            switch_dict = {}
-            switch_dist_list = []
-            for key in distances.keys():
-                if key[0]=="h":
-                    in_dict = {}
-                    for in_key in distances[key].keys():
-                        if in_key[0]=="s":
-                            in_dict[int(in_key[1:])]=distances[key][in_key]
-                    switch_dict[int(key[1:])]=in_dict
-            
-            for i, j in switch_dict.items():
-                switch_dist_list.append(j.values())
+		for i, j in switch_dict.items():
+			switch_dist_list.append(j.values())
 
-            dest_num = len(self.topo.get_hosts())
+		dest_num = len(self.topo.get_hosts())
 
-            sorted_list = []
-            for i in switch_dist_list:
-                sorted_dict = defaultdict(list)
-                for j in range(len(i)):
-                    sorted_dict[i[j]].append(j+1)
-                sorted_list.append(sorted_dict)
-            
-            list_whole = []
-            for k in sorted_list:
-                list_1 = []
-                for o in range(1,len(k)+1):
-                    list_1.append(k[o])
-                list_whole.append(list_1) # return [[[1],[2,3],[4,5,6,7],[8,9,10]],[...]] sorted by dist
-            
-            print(list_whole)
-            index_dst = 0
-            for switch_dist_per_host in list_whole:
-                seq_num = 0
-                for sorted_dist in switch_dist_per_host:
-                    for same_dist_switch_seq in sorted_dist:
-                        # All Edges Outward
-                        curr_switch = "s{}".format(same_dist_switch_seq)
-                        if seq_num != 0 and same_dist_switch_seq <= len(self.topo.get_hosts()): # exclude the non-ddc-links for border switch 
-                            self.controllers[curr_switch].register_write('link_directions', index_dst, 1)
-                        else:
-                            self.controllers[curr_switch].register_write('link_directions', index_dst, 0)
-                        for connected_switch in self.topo.get_switches_connected_to(curr_switch):
-	        	    print(connected_switch) 
-                            pre_direction = self.controllers[connected_switch].register_read('link_directions',index_dst)
-                            print("pre_dir is %d"%pre_direction)
-                            connected_port = self.topo.node_to_node_port_num(connected_switch, curr_switch)
-                            self.controllers[connected_switch].register_write('link_directions', index_dst, pre_direction + pow(2,connected_port-1))
-                            print("wrote the link_direction of %s for dest-%d ---- %d"%(connected_switch, index_dst, pre_direction+pow(2,connected_port-1)))
-                    seq_num += 1 
-                index_dst += 1
-            
-            #for i in range(dest_num):
-            #    for switch,control in self.controllers.items():
-            #        link_direction = control.register_read('link_directions',i)
-            #        print("link_direction of %s for dest - %d is %s"%(switch, i, link_direction))
+		sorted_list = []
+		for i in switch_dist_list:
+			sorted_dict = defaultdict(list)
+			for j in range(len(i)):
+				sorted_dict[i[j]].append(j+1)
+			sorted_list.append(sorted_dict)
+
+		list_whole = []
+		for k in sorted_list:
+			list_1 = []
+			for o in range(1,len(k)+1):
+				list_1.append(k[o])
+			list_whole.append(list_1) # return [[[1],[2,3],[4,5,6,7],[8,9,10]],[...]] sorted by dist
+
+		print(list_whole)
+		index_dst = 0
+		for switch_dist_per_host in list_whole:
+			seq_num = 0
+			for sorted_dist in switch_dist_per_host:
+				for same_dist_switch_seq in sorted_dist:
+					# All Edges Outward
+					curr_switch = "s{}".format(same_dist_switch_seq)
+					if seq_num != 0 and same_dist_switch_seq <= len(self.topo.get_hosts()): # exclude the non-ddc-links for border switch 
+						self.controllers[curr_switch].register_write('link_directions', index_dst, 1)
+					else:
+						self.controllers[curr_switch].register_write('link_directions', index_dst, 0)
+					for connected_switch in self.topo.get_switches_connected_to(curr_switch):
+				print(connected_switch) 
+						pre_direction = self.controllers[connected_switch].register_read('link_directions',index_dst)
+						print("pre_dir is %d"%pre_direction)
+						connected_port = self.topo.node_to_node_port_num(connected_switch, curr_switch)
+						self.controllers[connected_switch].register_write('link_directions', index_dst, pre_direction + pow(2,connected_port-1))
+						print("wrote the link_direction of %s for dest-%d ---- %d"%(connected_switch, index_dst, pre_direction+pow(2,connected_port-1)))
+				seq_num += 1 
+			index_dst += 1
+
+		#for i in range(dest_num):
+		#    for switch,control in self.controllers.items():
+		#        link_direction = control.register_read('link_directions',i)
+		#        print("link_direction of %s for dest - %d is %s"%(switch, i, link_direction))
                 
-        def install_edge_priorities(self):
-            graph = self.topo.network_graph
-            dijkstra = dict(all_pairs_dijkstra(graph, weight = 'weight'))
-            distances = {node: data[0] for node, data in dijkstra.items()}
-            for host in self.topo.get_hosts():
-                dest_seq = int(host[1:])-1
-                for switch in self.topo.get_switches():
-                    if distances[switch].has_key(host):
-		        all_paths = self.topo.get_shortest_paths_between_nodes(switch, host)                     
-		        # all paths is a [[]] which includes the path in the order of length
-                        print all_paths
-                        seq = 0
-                        port_list = []
-		        for path in all_paths:
-                            port = self.topo.node_to_node_port_num(switch, path[1])
-                            if port not in port_list:
-                                self.controllers[switch].register_write('edge_priorities_{}'.format(seq), dest_seq, port)
-                                print("%s write edge prios %d for %s with %d"%(switch, seq, host, port))
-                                port_list.append(port)
-                                seq += 1                                                                            
-		                if seq == 5: break
+	def install_edge_priorities(self):
+		graph = self.topo.network_graph
+		dijkstra = dict(all_pairs_dijkstra(graph, weight = 'weight'))
+		distances = {node: data[0] for node, data in dijkstra.items()}
+		for host in self.topo.get_hosts():
+			dest_seq = int(host[1:])-1
+			for switch in self.topo.get_switches():
+				if distances[switch].has_key(host):
+				all_paths = self.topo.get_shortest_paths_between_nodes(switch, host)                     
+				# all paths is a [[]] which includes the path in the order of length
+				print all_paths
+				seq = 0
+				port_list = []
+				for path in all_paths:
+					port = self.topo.node_to_node_port_num(switch, path[1])
+					if port not in port_list:
+						self.controllers[switch].register_write('edge_priorities_{}'.format(seq), dest_seq, port)
+						print("%s write edge prios %d for %s with %d"%(switch, seq, host, port))
+						port_list.append(port)
+						seq += 1                                                                            
+						if seq == 5: break
 
 if __name__ == "__main__":
 	controller = DDC_Controller()

@@ -49,9 +49,28 @@ git pull
 ```
 
 ### Executing DDC
-1. Compile the P4 program and start on the topology: `sudo p4run --conf json/<conf file>` - This will call a python script that parses the configuration file, creates a virtual network of hosts and p4 switches using mininet, compile the p4 program and load it in the switch. After running p4run you will get the mininet CLI prompt. For simple tests, please choose `10-switches.json` since other topologies take much longer to initialize.
-2. Start the controller in another terminal window: `python controller/controller.py`  
-3. Testing connectivity: `h1 ping h2`, `pingall`, etc.
+1. Compile the P4 program and start on the topology: 
+   
+   ```bash
+   sudo p4run --conf json/<conf file>
+   ``` 
+   
+   This will call a python script that parses the configuration file, creates a virtual network of hosts and p4 switches using mininet, compile the p4 program and load it in the switch. After running p4run you will get the mininet CLI prompt. For simple tests, please choose `10-switches.json` since other topologies take much longer to initialize.
+2. Start the controller in another terminal window: 
+
+   ```bash
+   python controller/controller.py
+   ```  
+
+3. Testing connectivity: 
+   
+   ```bash
+   mininet> h1 ping h2
+   ``` 
+   
+   ```bash
+   mininte> pingall
+   ```
 
 ### Evalution
 #### 1. Path Stretch

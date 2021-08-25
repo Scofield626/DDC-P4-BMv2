@@ -1,0 +1,37 @@
+\documentclass{rescience}
+
+\usepackage{algorithm}
+\usepackage{algorithmic}
+%\usepackage[noend]{algpseudocode}
+\usepackage{amsmath}
+\usepackage{enumerate}
+\usepackage{cleveref}
+\usepackage{xspace}
+\usepackage[pagewise]{lineno}
+\usepackage{hyperref}
+\usepackage{fontspec}
+\usepackage[utf8]{inputenc}
+\usepackage{cleveref}
+\crefname{section}{§}{§§}
+\Crefname{section}{§}{§§}
+
+\newcommand{\RJ}[1]{{\color{blue}\bf RJ: #1}}
+\newcommand{\ls}{\emph{local\_seq}\xspace}
+\newcommand{\rs}{\emph{remote\_seq}\xspace}
+\newcommand{\ld}{\emph{link\_direction}\xspace}
+\newcommand{\tr}{\emph{to\_reverse}\xspace}
+\newcommand{\lkst}{\emph{linkState}\xspace}
+\newcommand{\hp}{\emph{hops\_count}\xspace}
+\newcommand{\hn}{\emph{hops\_number}\xspace}
+
+\begin{document}
+
+\input{header.tex}
+\input{content.tex}
+
+\hypersetup{linkcolor=black,urlcolor=darkgray}
+\renewcommand\emph[1]{{\bfseries #1}}
+\setlength\bibitemsep{0pt}
+\printbibliography
+
+\end{document}

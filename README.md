@@ -20,7 +20,7 @@ This README is organised as follows.
     - `actual_paths.py` - the simulation in the control plane to compute the paths that packet actually takes
  - `path_stretch/` - the evalution via path stretch (i.e., the ratio between the length of the path a packet takes throughthe network, and the shortest path between the packet’s source and destination in thecurrent network state) 
  - `packet_latency/` - the evaluation via packet latency (the comparison of time that before and after link failures) 
- - `acticles` - the replication article uses the [ReScience C](https://rescience.github.io/) journal template. Instructions to reproduce the article are provided in the subfolder `README`.
+ - `acticle/` - the replication article uses the [ReScience C](https://rescience.github.io/) journal template. Instructions to reproduce the article are provided in the subfolder `README`.
 
 ## Quick Guide
 ### Environmental Setup
@@ -69,7 +69,7 @@ git pull
    ``` 
    
    ```bash
-   mininte> pingall
+   mininet> pingall
    ```
 
 4. Failing links in the controller:

@@ -119,23 +119,34 @@ The pseudo code of DDC shows as below.
 \subsection{DDC in P4}
 \label{sec:DDC}
 \subsubsection{Packet Header}
-We assume that the packets coming from each host are in standard header format, i.e.~ETHERNET/IP/TCP(UDP)/. To make use of DDC algorithm as a routing approach, DDC layer is inserted into the packet header between layer 2 and layer 3, i.e.~ETHERNET/DDC/IP/. The inserting operation is conducted by p4 switches which are directly neighbored to the hosts. For a packet whose last hop is the source host arrives at the neighbor switch, DDC will be set valid to guide the network behaviors. Hence, this kind of switch is regarded as \textit{border switch}, which also removes DDC header if the next hop of a packet is the destination host. In addition, the link connecting a host and a switch should be excluded from consideration when choosing out links to forward based on DDC due to that this sort of links are absent from the area that DDC is validated.
+We assume that the packets coming from each host are in standard header format, i.e.~ETHERNET/IP/TCP(UDP)/. 
+To make use of DDC algorithm as a routing approach, DDC layer is inserted into the packet header between layer 2 and layer 3, i.e.~ETHERNET/DDC/IP/. 
+The inserting operation is conducted by p4 switches which are directly neighbored to the hosts. 
+For a packet whose last hop is the source host arrives at the neighbor switch, DDC will be set valid to guide the network behaviors. 
+Hence, this kind of switch is regarded as \textit{border switch}, which also removes DDC header if the next hop of a packet is the destination host. 
+In addition, the link connecting a host and a switch should be excluded from consideration when choosing out links to forward based on DDC due to that this sort of links are absent from the area that DDC is validated.
 
 \begin{figure}[H]
       \centering \includegraphics[scale=0.55]{pictures/packet header.png}
       \caption{\it{Packet header}}
 \end{figure}
 
-DDC header is mainly a 1-bit packet\_seq, and for the reason that BMv2 target only supports headers with fields totaling a multiple of 8 bits (!!Add a cite to spec), we also add a 7-bit padding part.    
+DDC header is mainly a 1-bit packet\_seq, and for the reason that BMv2 target only supports headers with fields totaling a multiple of 8 bits~\cite{p4-spec}, we also add a 7-bit padding part.    
 
 \subsubsection{Data Structures}
-We used sequential bits to represent the \ls, \rs, \ld, and \tr of each node. Within the bits instance, each bit represents the corresponding info  of each link on this node. The length of bits relies on the maximum link quantity of the node (generally 32-bit). For example, 
+We used sequential bits to represent the \ls, \rs, \textit{link\_direc- tion}, and \tr of each node. Within the bits instance, each bit represents the corresponding info  of each link on this node. The length of bits relies on the maximum link quantity of the node (generally 32-bit). For example, 
 \begin{itemize}
 \item if \ls is X...X01, it means the \ls of the link on port 1 is 1 while that on port 2 is 0.
 \item if \ld is X...X01, it means the direction of the link on port 1 is in while that on port 2 is out.
 \item if \tr is X...X01, it means the link on port 1 should be regarded as a potential option to be reversed, while that on port 2 should not.
 \end{itemize}
-Most constructs in P4 are stateless, which means given some inputs they produce a result that solely depends on these inputs. Thus, as a packet processing language, once it completes handling the information within each incoming packet and transfers it out, normally this information is not stored. However, the states at each node, such as \ls and \rs, should be retained across sending and receiving of packets. To this end, here we use the register, a stateful extern object, in v1model architecture(add a citation!!!), that has states which can be read and written by both control plane and data plane. Registers are assigned in arrays and useful for storing small amounts of arbitrary data. As the DAG is per-destination based, it is necessary to store these states respectively for different destinations. So we initialize a register for every state, each of which possesses elements of maximum destination quantity in the array format. \\
+Most constructs in P4 are stateless, which means given some inputs they produce a result that solely depends on these inputs. 
+Thus, as a packet processing language, once it completes handling the information within each incoming packet and transfers it out, normally this information is not stored. 
+However, the states at each node, such as \ls and \rs, should be retained across sending and receiving of packets. 
+To this end, here we use the register, a stateful extern object, in v1model architecture, that has states which can be read and written by both control plane and data plane. 
+Registers are assigned in arrays and useful for storing small amounts of arbitrary data. 
+As the DAG is per-destination based, it is necessary to store these states respectively for different destinations. 
+So we initialize a register for every state, each of which possesses elements of maximum destination quantity in the array format.\\
 
 In the light of that P4 supports neither the \textit{for} loop nor other advanced data structures, storing the state information in the sequential bits and indexing them by disparate destinations is the most efficient and plausible way to re-implement DDC algorithm in P4. According to this, we need to frequently take bit operations, including shift\_left, shift\_right, AND, OR.  For instance, to judge whether a link\_direction is certainly in or out, simply shift left 1 to the corresponding bit position and use OR logic with original bits to compare; to judge whether packet\_seq (1-bit) is equal to the remote\_seq on the arriving port, shift\_left the packet\_seq, use AND logic to get the needed bit of remote\_seq while masking others and then make a comparison.
 
@@ -153,7 +164,10 @@ In the process flow of our implementation illustrated in \Cref{fig:p4Process} (t
 \label{sec:control}
 DDC guarantees connectivity in the data plane, but it also relies on the control plane to guide the data plane to use desirable paths. A P4 program represents only a part of a complete working system. The control plane software is written in one or more general purpose programming languages like C, C++, Python, etc., and is responsible for adding and removing entries to P4 tables. 
 
-We make a large use of \textit{P4-utils}~\cite{p4-utils} (in Python), which creates virtual networks using mininet~\cite{mininet} (a network virtualization engine that is convenient to deploy Software-Defined Networking systems) and extended nodes that run p4-enabled switches. Mininet takes bash processes to create hosts in an isolated network namespace and uses virtual ethernet pairs, living in the Linux kernel, to connect the emulated hosts with our BMv2 switches. \textit{P4-utils} also provides multiple gainful APIs to write controllers (e.g., analyzing topology, adding table entries and writing/reading values into/from registers), by which we install the table entries and initialize register values. The following subsections detail how the \ld registers are initialized, and how edge priorities are implemented.
+We make a large use of \textit{P4-utils}~\cite{p4-utils} (in Python), which creates virtual networks using mininet~\cite{mininet} (a network virtualization engine that is convenient to deploy Software Defined Networking systems) and extended nodes that run p4-enabled switches. 
+Mininet takes bash processes to create hosts in an isolated network namespace and uses virtual ethernet pairs, living in the Linux kernel, to connect the emulated hosts with our BMv2 switches.
+\textit{P4-utils} also provides multiple gainful APIs to write controllers (e.g., analyzing topology, adding table entries and writing/reading values into/from registers), by which we install the table entries and initialize register values. 
+The following subsections detail how the \ld registers are initialized, and how edge priorities are implemented.
 
 \subsubsection{Initialization of the destination-oriented DAG}
 Packets serve as reversal notifications in the data plane algorithm. Although DDC is absolutely feasible on an initially arbitrary DAG, it is practically efficient to initialize a (converged) destination-oriented DAG for the purpose of decreasing the time of packets probing. The original paper proposes the all-edges-outward (\textbf{AEO}) operation, which modifies all of a single node’s edges to point outward. Let assume that each node is assigned a \textit{distance} from the destination. These could be produced, for instance, by a standard shortest path protocol or by a central coordinator.  Let $v_1$,...,$v_n$ be the (non-destination) nodes sorted in order of distance from the destination, i.e., a topological sort of the target DAG. Suppose we iterate through each node $i$ from 1 to $n$, performing an AEO operation on each $v_i$, as showed in \Cref{fig:AEO}. The resulting destination-oriented DAG contains only shortest paths to the destination, because for any undirected edge ($u$,$v$) such that $u$ is closer to the destination, $v$ will direct the edge $v \rightarrow u$ after $u$ directed it $u \rightarrow v$.

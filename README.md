@@ -1,4 +1,5 @@
 # [Re] Ensuring Connectivity via Data Plane Mechanisms
+[![paper](https://img.shields.io/badge/_-Paper-blue?logo=adobeacrobatreader)](https://doi.org/10.3929/ethz-b-000504320)&nbsp;&nbsp;
 > J. Liu, A. Panda, A. Singla, B. Godfrey, M. Schapira, and S. Shenker. "Ensuring connectivity via data plane mechanisms." In:10th USENIX Symposium on Networked Systems Design and Implementation (NSDI 13).2013, pp. 113–126.
 
 This is a replication work of above presented paper, which mainly proposed *Data-Driven Connectivity* (**DDC**) to ensure routing connectivity via data plane mechanisms. 
